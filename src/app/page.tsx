@@ -1,5 +1,6 @@
 "use client";
-import React from "react";
+
+import React, { useState } from "react";
 import {
   MDBBtn,
   MDBCard,
@@ -12,11 +13,34 @@ import {
   MDBTableBody,
   MDBTableHead,
 } from "mdb-react-ui-kit";
-import { useAccount } from "wagmi";
+import { useAccount, useReadContract, useWriteContract } from "wagmi";
 import ConnectButton from "@/components/ConnectWalletButton";
+import { TODOLIST_ABI, TODOLIST_ADDRESS } from "@/constants";
+
+const todolistContract = {
+  address: TODOLIST_ADDRESS as `0x${string}`,
+  abi: TODOLIST_ABI,
+}
 
 export default function Home() {
-  const { isConnected } = useAccount();
+  const { isConnected, address } = useAccount();
+  const [task, setTask] = useState('');
+  const { data } = useReadContract({
+    ...todolistContract,
+    functionName: "getTasks",
+    account: address as `0x${string}`,
+  });
+  console.info(data)
+  const { writeContract } = useWriteContract();
+
+  function handleAddTask() {
+    writeContract({
+      ...todolistContract,
+      functionName: "createTask",
+      args: ['First Task!'],
+      account: address as `0x${string}`,
+    });
+  }
 
   if (!isConnected) {
     return (
@@ -42,7 +66,7 @@ export default function Home() {
     <section className="">
       <MDBContainer className="py-5 h-100">
         <MDBRow className="d-flex justify-content-center align-items-center">
-          <MDBCol lg="9" xl="7">
+          <MDBCol md="12" xl="7">
             <MDBCard className="rounded-3" style={{ backgroundColor: "#202127" }}>
               <MDBCardBody className="p-4">
                 <h4 className="text-center my-3 pb-3 font-bold" style={{ color: "#fff" }}>
@@ -59,10 +83,12 @@ export default function Home() {
                       id="form1"
                       type="text"
                       style={{ backgroundColor: "#2B2F36", color: "#fff" }}
+                      value={task}
+                      onChange={(e) => setTask(e.target.value)}
                     />
                   </MDBCol>
                   <MDBCol size="12">
-                    <MDBBtn type="submit" onClick={() => open()}>
+                    <MDBBtn type="submit" onClick={handleAddTask}>
                       Save
                     </MDBBtn>
                   </MDBCol>
