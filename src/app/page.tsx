@@ -32,7 +32,7 @@ type Todo = {
 export default function Home() {
   const [task, setTask] = useState("");
   const { isConnected, address } = useAccount();
-  const { writeContract, status } = useWriteContract();
+  const { writeContractAsync } = useWriteContract();
   const { data, refetch } = useReadContract({
     ...todolistContract,
     functionName: "getTasks",
@@ -45,45 +45,112 @@ export default function Home() {
 
   const todos: Todo[] = (data as Todo[]) || [];
 
-  function handleAddTask() {
-    toast.loading('Adding task...', {
+  async function handleAddTask() {
+    toast.loading("Adding task...", {
       style: {
-        background: '#2B2F36',
-        color: '#fff',
+        background: "#2B2F36",
+        color: "#fff",
       },
     });
-    writeContract({
-      ...todolistContract,
-      functionName: "createTask",
-      args: [task],
-      account: address as `0x${string}`,
-    });
-    toast.success('Your task will be added to the list soon!', {
-      style: {
-        background: '#2B2F36',
-        color: '#fff',
+    await writeContractAsync(
+      {
+        ...todolistContract,
+        functionName: "createTask",
+        args: [task],
+        account: address as `0x${string}`,
       },
-    });
+      {
+        onSuccess: () => {
+          toast.dismiss();
+          toast.success("Your task will be added to the list soon!", {
+            style: {
+              background: "#2B2F36",
+              color: "#fff",
+            },
+          });
+        },
+        onError: () => {
+          toast.dismiss();
+          toast.error("Failed to add task", {
+            style: {
+              background: "#2B2F36",
+              color: "#fff",
+            },
+          });
+        },
+      }
+    );
+    setTask("");
   }
 
-  function handleFinishTask(id: number) {
-    writeContract({
+  async function handleFinishTask(id: number) {
+    toast.loading("Completing task...", {
+      style: {
+        background: "#2B2F36",
+        color: "#fff",
+      },
+    });
+    await writeContractAsync({
       ...todolistContract,
       functionName: "completeTask",
       args: [id],
-      account: address as `0x${string}`,
+        account: address as `0x${string}`,
+      },
+      {
+        onSuccess: () => {
+          toast.dismiss();
+        toast.success("Task completed", {
+          style: {
+            background: "#2B2F36",
+            color: "#fff",
+          },
+        });
+      },
+      onError: () => {
+        toast.dismiss();
+        toast.error("Failed to complete task", {
+          style: {
+            background: "#2B2F36",
+            color: "#fff",
+          },
+        });
+      },
     });
   }
 
-  function handleDeleteTask(id: number) {
-    writeContract({
+  async function handleDeleteTask(id: number) {
+    toast.loading("Deleting task...", {
+      style: {
+        background: "#2B2F36",
+        color: "#fff",
+      },
+    });
+    await writeContractAsync({
       ...todolistContract,
       functionName: "removeTask",
       args: [id],
       account: address as `0x${string}`,
+    }, {
+      onSuccess: () => {
+        toast.dismiss();
+        toast.success("Task deleted", {
+          style: {
+            background: "#2B2F36",
+            color: "#fff",
+          },
+        });
+      },
+      onError: () => {
+        toast.dismiss();
+        toast.error("Failed to delete task", {
+          style: {
+            background: "#2B2F36",
+            color: "#fff",
+          },
+        });
+      },
     });
   }
-
 
   if (!isConnected) {
     return (
@@ -131,10 +198,10 @@ export default function Home() {
                   <MDBCol size="12">
                     <MDBInput
                       label="Enter a task here"
-                      labelStyle={{ color: "#fff" }}
+                      labelStyle={{ color: "#fff", fontSize: "0.8rem" }}
                       id="form1"
                       type="text"
-                      style={{ backgroundColor: "#2B2F36", color: "#fff" }}
+                      style={{ backgroundColor: "#2B2F36", color: "#fff", fontSize: "1rem" }}
                       value={task}
                       onChange={(e) => setTask(e.target.value)}
                     />
@@ -146,7 +213,7 @@ export default function Home() {
                   </MDBCol>
                   <MDBCol size="12">
                     <MDBBtn type="button" color="warning" onClick={refetch}>
-                      Get tasks
+                      Refresh
                     </MDBBtn>
                   </MDBCol>
                 </MDBRow>
@@ -215,9 +282,9 @@ export default function Home() {
                       <th scope="col">Status</th>
                       <th scope="col">Actions</th>
                     </tr>
-                </MDBTableHead>
-                <MDBTableBody>
-                  {todos && todos.length > 0 ? (
+                  </MDBTableHead>
+                  <MDBTableBody>
+                    {todos && todos.length > 0 ? (
                       todos
                         .filter((todo: any) => todo.completed)
                         .map((todo: any, index: number) => (
