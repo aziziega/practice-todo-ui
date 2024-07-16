@@ -14,8 +14,11 @@ import {
   MDBTableBody,
   MDBTableHead,
 } from "mdb-react-ui-kit";
-import { useAccount, useReadContract, useWriteContract } from "wagmi";
 import ConnectButton from "@/components/ConnectWalletButton";
+
+import { useAccount, useReadContract, useWriteContract } from "wagmi";
+import { waitForTransactionReceipt } from "@wagmi/core";
+import { config } from "../config/index";
 import { TODOLIST_ABI, TODOLIST_ADDRESS } from "@/constants";
 
 const todolistContract = {
@@ -46,13 +49,13 @@ export default function Home() {
   const todos: Todo[] = (data as Todo[]) || [];
 
   async function handleAddTask() {
-    toast.loading("Adding task...", {
+    toast.loading("Finishing your mutation...", {
       style: {
         background: "#2B2F36",
         color: "#fff",
       },
     });
-    await writeContractAsync(
+    const result = await writeContractAsync(
       {
         ...todolistContract,
         functionName: "createTask",
@@ -62,7 +65,7 @@ export default function Home() {
       {
         onSuccess: () => {
           toast.dismiss();
-          toast.success("Your task will be added to the list soon!", {
+          toast.loading("Adding your task...", {
             style: {
               background: "#2B2F36",
               color: "#fff",
@@ -80,33 +83,79 @@ export default function Home() {
         },
       }
     );
-    setTask("");
-  }
-
-  async function handleFinishTask(id: number) {
-    toast.loading("Completing task...", {
-      style: {
-        background: "#2B2F36",
-        color: "#fff",
-      },
-    });
-    await writeContractAsync({
-      ...todolistContract,
-      functionName: "completeTask",
-      args: [id],
-        account: address as `0x${string}`,
-      },
-      {
-        onSuccess: () => {
-          toast.dismiss();
-        toast.success("Task completed", {
+    await waitForTransactionReceipt(config, {
+      hash: result as `0x${string}`,
+    })
+      .then(() => {
+        toast.dismiss();
+        toast.success("Task Successfully Added!", {
           style: {
             background: "#2B2F36",
             color: "#fff",
           },
         });
+      })
+      .catch(() => {
+        toast.dismiss();
+        toast.error("Failed to add task", {
+          style: {
+            background: "#2B2F36",
+            color: "#fff",
+          },
+        });
+      });
+
+    setTask("");
+  }
+
+  async function handleFinishTask(id: number) {
+    toast.loading("Finishing your mutation...", {
+      style: {
+        background: "#2B2F36",
+        color: "#fff",
       },
-      onError: () => {
+    });
+    const result = await writeContractAsync(
+      {
+        ...todolistContract,
+        functionName: "completeTask",
+        args: [id],
+        account: address as `0x${string}`,
+      },
+      {
+        onSuccess: () => {
+          toast.dismiss();
+          toast.loading("Completing your task...", {
+            style: {
+              background: "#2B2F36",
+              color: "#fff",
+            },
+          });
+        },
+        onError: () => {
+          toast.dismiss();
+          toast.error("Failed to complete task", {
+            style: {
+              background: "#2B2F36",
+              color: "#fff",
+            },
+          });
+        },
+      }
+    );
+    await waitForTransactionReceipt(config, {
+      hash: result as `0x${string}`,
+    })
+      .then(() => {
+        toast.dismiss();
+        toast.success("Task Successfully Completed!", {
+          style: {
+            background: "#2B2F36",
+            color: "#fff",
+          },
+        });
+      })
+      .catch(() => {
         toast.dismiss();
         toast.error("Failed to complete task", {
           style: {
@@ -114,33 +163,57 @@ export default function Home() {
             color: "#fff",
           },
         });
-      },
-    });
+      });
   }
 
   async function handleDeleteTask(id: number) {
-    toast.loading("Deleting task...", {
+    toast.loading("Finishing your mutation...", {
       style: {
         background: "#2B2F36",
         color: "#fff",
       },
     });
-    await writeContractAsync({
-      ...todolistContract,
-      functionName: "removeTask",
-      args: [id],
-      account: address as `0x${string}`,
-    }, {
-      onSuccess: () => {
+    const result = await writeContractAsync(
+      {
+        ...todolistContract,
+        functionName: "removeTask",
+        args: [id],
+        account: address as `0x${string}`,
+      },
+      {
+        onSuccess: () => {
+          toast.dismiss();
+          toast.loading("Removing your task...", {
+            style: {
+              background: "#2B2F36",
+              color: "#fff",
+            },
+          });
+        },
+        onError: () => {
+          toast.dismiss();
+          toast.error("Failed to delete task", {
+            style: {
+              background: "#2B2F36",
+              color: "#fff",
+            },
+          });
+        },
+      }
+    );
+    await waitForTransactionReceipt(config, {
+      hash: result as `0x${string}`,
+    })
+      .then(() => {
         toast.dismiss();
-        toast.success("Task deleted", {
+        toast.success("Task Successfully Removed!", {
           style: {
             background: "#2B2F36",
             color: "#fff",
           },
         });
-      },
-      onError: () => {
+      })
+      .catch(() => {
         toast.dismiss();
         toast.error("Failed to delete task", {
           style: {
@@ -148,8 +221,7 @@ export default function Home() {
             color: "#fff",
           },
         });
-      },
-    });
+      });
   }
 
   if (!isConnected) {
@@ -201,7 +273,11 @@ export default function Home() {
                       labelStyle={{ color: "#fff", fontSize: "0.8rem" }}
                       id="form1"
                       type="text"
-                      style={{ backgroundColor: "#2B2F36", color: "#fff", fontSize: "1rem" }}
+                      style={{
+                        backgroundColor: "#2B2F36",
+                        color: "#fff",
+                        fontSize: "1rem",
+                      }}
                       value={task}
                       onChange={(e) => setTask(e.target.value)}
                     />
