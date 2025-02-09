@@ -42,7 +42,6 @@ export default function Home() {
     account: address as `0x${string}`,
     query: {
       enabled: isConnected,
-      refetchInterval: 1000,
     },
   });
 
@@ -86,7 +85,7 @@ export default function Home() {
     await waitForTransactionReceipt(config, {
       hash: result as `0x${string}`,
     })
-      .then(() => {
+      .then(async () => {
         toast.dismiss();
         toast.success("Task Successfully Added!", {
           style: {
@@ -94,6 +93,7 @@ export default function Home() {
             color: "#fff",
           },
         });
+        await refetch();
       })
       .catch(() => {
         toast.dismiss();
@@ -146,7 +146,7 @@ export default function Home() {
     await waitForTransactionReceipt(config, {
       hash: result as `0x${string}`,
     })
-      .then(() => {
+      .then(async () => {
         toast.dismiss();
         toast.success("Task Successfully Completed!", {
           style: {
@@ -154,6 +154,7 @@ export default function Home() {
             color: "#fff",
           },
         });
+        await refetch();
       })
       .catch(() => {
         toast.dismiss();
@@ -204,7 +205,7 @@ export default function Home() {
     await waitForTransactionReceipt(config, {
       hash: result as `0x${string}`,
     })
-      .then(() => {
+      .then(async () => {
         toast.dismiss();
         toast.success("Task Successfully Removed!", {
           style: {
@@ -212,6 +213,7 @@ export default function Home() {
             color: "#fff",
           },
         });
+        await refetch();
       })
       .catch(() => {
         toast.dismiss();

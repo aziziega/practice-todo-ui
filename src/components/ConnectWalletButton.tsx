@@ -1,3 +1,12 @@
+import { useAccount } from 'wagmi';
+
 export default function ConnectButton() {
-    return <w3m-button label="Connect Your Wallet" />
-  }
+  const { isConnected } = useAccount();
+  
+  return (
+    <w3m-button 
+      balance="show"
+      label={isConnected ? undefined : "Connect Your Wallet"}
+    />
+  );
+}
