@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import { useState } from "react";
 import toast from "react-hot-toast";
 import {
   MDBBtn,
@@ -30,10 +30,18 @@ type Todo = {
   id: number;
   task: string;
   completed: boolean;
+  priority: string;
 };
 
 export default function Home() {
   const [task, setTask] = useState("");
+  const [priority, setPriority] = useState("");
+  const [inProgressSortOrder, setInProgressSortOrder] = useState<
+    "asc" | "desc"
+  >("asc");
+  const [completedSortOrder, setCompletedSortOrder] = useState<"asc" | "desc">(
+    "asc"
+  );
   const { isConnected, address } = useAccount();
   const { writeContractAsync } = useWriteContract();
   const { data, refetch } = useReadContract({
@@ -47,6 +55,24 @@ export default function Home() {
 
   const todos: Todo[] = (data as Todo[]) || [];
 
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc"); // Added state variable
+
+  const toggleSortOrder = () => {
+    setSortOrder((prevOrder) => (prevOrder === "asc" ? "desc" : "asc"));
+  };
+
+  const toggleInProgressSortOrder = () => {
+    setInProgressSortOrder((prevOrder) =>
+      prevOrder === "asc" ? "desc" : "asc"
+    );
+  };
+
+  const toggleCompletedSortOrder = () => {
+    setCompletedSortOrder((prevOrder) =>
+      prevOrder === "asc" ? "desc" : "asc"
+    );
+  };
+
   async function handleAddTask() {
     toast.loading("Finishing your mutation...", {
       style: {
@@ -58,7 +84,7 @@ export default function Home() {
       {
         ...todolistContract,
         functionName: "createTask",
-        args: [task],
+        args: [task, priority],
         account: address as `0x${string}`,
       },
       {
@@ -290,6 +316,29 @@ export default function Home() {
                     </MDBBtn>
                   </MDBCol>
                   <MDBCol size="12">
+                    <select
+                      className="form-select"
+                      id="formPriority"
+                      style={{
+                        backgroundColor: "#2B2F36",
+                        color: "#fff",
+                        fontSize: "1rem",
+                        border: "1px solid #444",
+                        borderRadius: "0.25rem",
+                        padding: "0.375rem 0.75rem",
+                      }}
+                      value={priority}
+                      onChange={(e) => setPriority(e.target.value)}
+                    >
+                      <option value="" disabled>
+                        Select priority
+                      </option>
+                      <option value="Low">Low</option>
+                      <option value="Medium">Medium</option>
+                      <option value="High">High</option>
+                    </select>
+                  </MDBCol>
+                  <MDBCol size="12">
                     <MDBBtn type="button" color="warning" onClick={refetch}>
                       Refresh
                     </MDBBtn>
@@ -305,12 +354,33 @@ export default function Home() {
                       <th scope="col">Todo item</th>
                       <th scope="col">Status</th>
                       <th scope="col">Actions</th>
+                      <th
+                        scope="col"
+                        style={{ cursor: "pointer" }}
+                        onClick={toggleInProgressSortOrder}
+                      >
+                        Priority {inProgressSortOrder === "asc" ? "↑" : "↓"}
+                      </th>
                     </tr>
                   </MDBTableHead>
                   <MDBTableBody>
                     {todos && todos.length > 0 ? (
                       todos
                         .filter((todo: any) => !todo.completed)
+                        .sort((a: Todo, b: Todo) => {
+                          const priorityOrder = { Low: 1, Medium: 2, High: 3 };
+                          const priorityA =
+                            priorityOrder[
+                            a.priority as keyof typeof priorityOrder
+                            ] || 0;
+                          const priorityB =
+                            priorityOrder[
+                            b.priority as keyof typeof priorityOrder
+                            ] || 0;
+                          return inProgressSortOrder === "asc"
+                            ? priorityA - priorityB
+                            : priorityB - priorityA;
+                        })
                         .map((todo: any, index: number) => (
                           <tr key={index}>
                             <th scope="row">{index + 1}</th>
@@ -335,11 +405,12 @@ export default function Home() {
                                 Finished
                               </MDBBtn>
                             </td>
+                            <td>{todo.priority}</td>
                           </tr>
                         ))
                     ) : (
                       <tr>
-                        <td colSpan={4} className="text-center">
+                        <td colSpan={5} className="text-center">
                           No tasks found
                         </td>
                       </tr>
@@ -359,12 +430,33 @@ export default function Home() {
                       <th scope="col">Todo item</th>
                       <th scope="col">Status</th>
                       <th scope="col">Actions</th>
+                      <th
+                        scope="col"
+                        style={{ cursor: "pointer" }}
+                        onClick={toggleCompletedSortOrder}
+                      >
+                        Priority {completedSortOrder === "asc" ? "↑" : "↓"}
+                      </th>
                     </tr>
                   </MDBTableHead>
                   <MDBTableBody>
                     {todos && todos.length > 0 ? (
                       todos
                         .filter((todo: any) => todo.completed)
+                        .sort((a: Todo, b: Todo) => {
+                          const priorityOrder = { Low: 1, Medium: 2, High: 3 };
+                          const priorityA =
+                            priorityOrder[
+                            a.priority as keyof typeof priorityOrder
+                            ] || 0;
+                          const priorityB =
+                            priorityOrder[
+                            b.priority as keyof typeof priorityOrder
+                            ] || 0;
+                          return completedSortOrder === "asc"
+                            ? priorityA - priorityB
+                            : priorityB - priorityA;
+                        })
                         .map((todo: any, index: number) => (
                           <tr key={index}>
                             <th scope="row">{index + 1}</th>
@@ -381,11 +473,12 @@ export default function Home() {
                                 Delete
                               </MDBBtn>
                             </td>
+                            <td>{todo.priority}</td>
                           </tr>
                         ))
                     ) : (
                       <tr>
-                        <td colSpan={4} className="text-center">
+                        <td colSpan={5} className="text-center">
                           No completed tasks found
                         </td>
                       </tr>
@@ -397,6 +490,11 @@ export default function Home() {
           </MDBCol>
         </MDBRow>
       </MDBContainer>
+      <style jsx>{`
+        select {
+          appearance: auto;
+        }
+      `}</style>
     </section>
   );
 }
